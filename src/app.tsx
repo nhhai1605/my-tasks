@@ -1,11 +1,9 @@
 import { createRoot } from "react-dom/client";
+import { Home } from "./screens";
 
 const App = () => {
     return (
-        <div>
-            <h1>My Tasks</h1>
-            <p>Welcome to your Electron application.</p>
-        </div>
+        <Home />
     );
 };
 
