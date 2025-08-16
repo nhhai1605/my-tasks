@@ -1,1 +1,2 @@
-export { default as Home } from "./home";
+export { default as SalesDetailSummary } from "./sales-detail-summary";
+export { default as About } from "./about";
