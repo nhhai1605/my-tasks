@@ -20,31 +20,109 @@ const handleFileSummary = async (file: any) => {
         const worksheet = workbook.Sheets[sheetName];
 
         // Convert to JSON
-        const jsonData = XLSX.utils.sheet_to_json(worksheet);
+        const jsonData: any[] = XLSX.utils.sheet_to_json(worksheet);
         console.log("Parsed JSON:", jsonData);
 
-        // Do your processing here...
-        const processedData = jsonData.map((row: any) => ({
-            ...row,
-            Status: "Processed", // Example: add new column
-        }));
+        let startAtRow = 2;
+        var customerIdx = 7;
+        var itemIdIdx = 9;
+        var itemNameIdx = 10;
+        var unitIdx = 11;
+        var quantityIdx = 12;
+        var priceIdx = 13;
+        var totalIdx = 14;
+        let masterData: any = {};
+        let allUniqueCustomers: any = new Set();
+        const dataSheetName = ["Tổng số lượng bán", "Đơn giá", "Doanh thu"];
 
-        // Step 3: Convert JSON back to worksheet
-        const newWorksheet = XLSX.utils.json_to_sheet(processedData);
+        for (let i = startAtRow; i < jsonData.length; i++) {
+            const row = jsonData[i];
+            const columns = Object.keys(row);
+            const itemId = row[columns[itemIdIdx]];
+            if (!itemId) {
+                continue; // Skip rows without itemId
+            }
+            if (!masterData[itemId]) {
+                masterData[itemId] = {
+                    itemName: row[columns[itemNameIdx]],
+                    unit: row[columns[unitIdx]],
+                    customerInfo: {},
+                };
+            }
+            // if exist customerInfo[row[columns[customerIdx]]] then plus the quantity and total
+            let curCustomer = masterData[itemId].customerInfo[row[columns[customerIdx]]];
+            if (curCustomer) {
+                if(row[columns[customerIdx]]== "C10015" && itemId == "HK - 0000006 - 01")
+                {
+                    console.log("Found C10015:", row[columns[customerIdx]], curCustomer);
+                    console.log("Found C10015 2:", row[columns[priceIdx]]);
+                }
+                curCustomer[dataSheetName[0]] += row[columns[quantityIdx]];
+                curCustomer[dataSheetName[1]] = row[columns[priceIdx]] > 0 ? row[columns[priceIdx]] : curCustomer[dataSheetName[1]];
+                curCustomer[dataSheetName[2]] = curCustomer[dataSheetName[0]] * curCustomer[dataSheetName[1]];
+            } else {
+                masterData[itemId].customerInfo[row[columns[customerIdx]]] = {
+                    [dataSheetName[0]]: row[columns[quantityIdx]],
+                    [dataSheetName[1]]: row[columns[priceIdx]],
+                    [dataSheetName[2]]: row[columns[totalIdx]],
+                };
+            }
 
-        // Step 4: Create new workbook
+            allUniqueCustomers.add(row[columns[customerIdx]]);
+        }
+        allUniqueCustomers = Array.from(allUniqueCustomers).sort();
+        console.log("Master Data:", masterData);
+        // Now make 3 worksheets for quantity, price, and total, each worksheets will have same itemId, itemName, Unit for first 3 columns
+        // Then will have unique customer data in subsequent columns , and each column will have data for quantity, price, total for that correspond sheet
+        let itemList: any[] = [];
+        for (const itemId in masterData) {
+            itemList.push({
+                itemId: itemId,
+                itemName: masterData[itemId].itemName,
+                unit: masterData[itemId].unit,
+            });
+        }
+        let worksheetList: any = {};
+
+        for (const dataType of dataSheetName) {
+            let rows: any[] = [];
+            for (const item of itemList) {
+                let row: any[] = [];
+                for (const key of Object.keys(item)) {
+                    row.push(item[key]);
+                }
+                for (const customer of allUniqueCustomers) {
+                    row.push(
+                        masterData[item.itemId].customerInfo[customer]?.[dataType] || null,
+                    );
+                }
+                rows.push(row);
+            }
+            worksheetList[dataType] = XLSX.utils.aoa_to_sheet([
+                [
+                    "Mã hàng",
+                    "Tên hàng",
+                    "ĐVT",
+                    ...allUniqueCustomers.map((customer: any) => customer),
+                ],
+                ...rows,
+            ]);
+        }
+
         const newWorkbook = XLSX.utils.book_new();
-        XLSX.utils.book_append_sheet(
-            newWorkbook,
-            newWorksheet,
-            "ProcessedData",
-        );
+        for (const dataType of dataSheetName) {
+            XLSX.utils.book_append_sheet(
+                newWorkbook,
+                worksheetList[dataType],
+                dataType,
+            );
+        }
 
-        // Step 5: Export to new Excel file
         const wbout = XLSX.write(newWorkbook, {
             bookType: "xlsx",
             type: "array",
         });
+
         saveAs(
             new Blob([wbout], { type: "application/octet-stream" }),
             file.originFileObj.name.replace(/\.(xlsx|xls)$/i, "-processed.$1"),
@@ -103,8 +181,7 @@ const SalesDetailSummary = () => {
                     Click or drag file to this area to upload
                 </p>
                 <p className="ant-upload-hint">
-                    Support for a single or bulk upload. Strictly prohibited
-                    from uploading company data or other banned files.
+                    Support for a single file upload. Only accept Excel files.
                 </p>
             </Dragger>
             <Button type="primary" onClick={onSubmit}>
