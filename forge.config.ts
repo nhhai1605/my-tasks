@@ -65,6 +65,7 @@ const config: ForgeConfig = {
             },
             prerelease: false,
             draft: true, // create as draft release
+            tagPrefix: 'v',
         }),
     ],
 };
