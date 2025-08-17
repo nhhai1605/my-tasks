@@ -3,7 +3,7 @@ import { styles } from "../utilities";
 const About = () => {
     return (
         <Flex>
-            <Typography>My Tasks @2025 by halng</Typography>
+            <Typography>My Tasks @{import.meta.env.VITE_VERSION} by halng</Typography>
         </Flex>
     );
 };
