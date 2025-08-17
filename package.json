@@ -20,12 +20,14 @@
     "devDependencies": {
         "@electron-forge/cli": "^7.8.3",
         "@electron-forge/maker-deb": "^7.8.3",
+        "@electron-forge/maker-dmg": "^7.8.3",
         "@electron-forge/maker-rpm": "^7.8.3",
         "@electron-forge/maker-squirrel": "^7.8.3",
         "@electron-forge/maker-zip": "^7.8.3",
         "@electron-forge/plugin-auto-unpack-natives": "^7.8.3",
         "@electron-forge/plugin-fuses": "^7.8.3",
         "@electron-forge/plugin-vite": "^7.8.3",
+        "@electron-forge/publisher-github": "^7.8.3",
         "@electron/fuses": "^1.8.0",
         "@types/electron-squirrel-startup": "^1.0.2",
         "@types/file-saver": "^2.0.7",
@@ -47,22 +49,5 @@
         "react": "^19.1.1",
         "react-dom": "^19.1.1",
         "xlsx": "^0.18.5"
-    },
-    "config": {
-        "forge": {
-            "publishers": [
-                {
-                    "name": "@electron-forge/publisher-github",
-                    "config": {
-                        "repository": {
-                            "owner": "nhhai1605",
-                            "name": "my-tasks"
-                        },
-                        "prerelease": false,
-                        "draft": true
-                    }
-                }
-            ]
-        }
     }
 }
