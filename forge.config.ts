@@ -12,6 +12,7 @@ import { PublisherGithub } from "@electron-forge/publisher-github";
 const config: ForgeConfig = {
     packagerConfig: {
         asar: true,
+        arch: "x64",
     },
     rebuildConfig: {},
     makers: [
@@ -65,7 +66,7 @@ const config: ForgeConfig = {
             },
             prerelease: false,
             draft: true, // create as draft release
-            tagPrefix: 'v',
+            tagPrefix: "v",
         }),
     ],
 };
