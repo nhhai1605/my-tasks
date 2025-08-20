@@ -43,7 +43,8 @@ const SalesDetailSummary = () => {
 
             // Index mapping (make it a config object)
             const colIdx = {
-                customer: 7,
+                customerId: 7,
+                customerName: 8,
                 itemId: 9,
                 itemName: 10,
                 unit: 11,
@@ -55,6 +56,7 @@ const SalesDetailSummary = () => {
             const sheetNames = ["Tổng số lượng bán", "Đơn giá", "Doanh thu"];
             const masterData: Record<string, any> = {};
             const customerSet = new Set<string>();
+            const customerNameMap: Record<string, string> = {};
 
             // --- Helper: Get cell value by index ---
             const cell = (row: any, idx: number) => row[Object.keys(row)[idx]];
@@ -73,8 +75,11 @@ const SalesDetailSummary = () => {
                     };
                 }
 
-                const customer = cell(row, colIdx.customer);
+                const customer = cell(row, colIdx.customerId);
                 customerSet.add(customer);
+                if (!customerNameMap[customer]) {
+                    customerNameMap[customer] = cell(row, colIdx.customerName);
+                }
 
                 const info = masterData[itemId].customerInfo[customer] ?? {
                     [sheetNames[0]]: null,
@@ -107,6 +112,9 @@ const SalesDetailSummary = () => {
             // --- Step 2: Transform into worksheets ---
             const buildSheet = (type: string) => {
                 const header = ["Mã hàng", "Tên hàng", "ĐVT", ...allCustomers];
+                const customerNameHeader = [null, null, null, ...allCustomers.map(
+                    (c) => customerNameMap[c] || c,
+                )];
 
                 // rows for Excel
                 const rows = Object.entries(masterData).map(
@@ -135,7 +143,8 @@ const SalesDetailSummary = () => {
                         return row;
                     },
                 );
-                var sheet = XLSX.utils.aoa_to_sheet([header, ...rows]);
+
+                var sheet = XLSX.utils.aoa_to_sheet([header, customerNameHeader, ...rows]);
                 // Apply Vietnamese money format (with thousand separator and ₫)
                 if (type != sheetNames[0]) {
                     // is money type
@@ -150,7 +159,6 @@ const SalesDetailSummary = () => {
                         }
                     });
                 }
-
                 return {
                     sheet: sheet, // for Excel
                     table: {
@@ -159,7 +167,16 @@ const SalesDetailSummary = () => {
                             dataIndex: h,
                             key: h,
                         })),
-                        data: tableData, // for Antd Table
+                        data: [{
+                            key: "customerNames",
+                            "Mã hàng": "Tên khách hàng",
+                            "Tên hàng": "",
+                            ĐVT: "",
+                            ...allCustomers.reduce(
+                                (acc, c) => ({ ...acc, [c]: customerNameMap[c] || c }),
+                                {},
+                            ),
+                        }, ...tableData], // for Antd Table 
                     },
                 };
             };
@@ -208,7 +225,7 @@ const SalesDetailSummary = () => {
 
     return (
         <Flex gap="middle" vertical>
-            <Flex gap="middle" vertical style={{ width: "400px" }}>
+            <Flex gap="middle" vertical>
                 <Dragger {...props} maxCount={1}>
                     <p className="ant-upload-drag-icon">
                         <InboxOutlined />
@@ -251,14 +268,19 @@ const SalesDetailSummary = () => {
                             <Table
                                 dataSource={t.data}
                                 columns={t.columns.map((col, idx) => {
-                                    if (idx >= 3 && keyIdx !== 0) {
+                                    if (idx >= 3) {
                                         return {
                                             ...col,
-                                            width: 200,
-                                            render: (value: number) =>
-                                                new Intl.NumberFormat(
-                                                    "vi-VN",
-                                                ).format(value),
+                                            width: getColumnWidth(idx),
+                                            render: (value: any) =>{
+                                                if(typeof value === "number")
+                                                {
+                                                    return new Intl.NumberFormat(
+                                                        "vi-VN",
+                                                    ).format(value);
+                                                }
+                                                return value;
+                                            }               
                                         };
                                     }
 

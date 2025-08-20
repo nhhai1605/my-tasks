@@ -11,8 +11,7 @@ import { PublisherGithub } from "@electron-forge/publisher-github";
 
 const config: ForgeConfig = {
     packagerConfig: {
-        asar: true,
-        arch: "x64",
+        asar: true
     },
     rebuildConfig: {},
     makers: [
